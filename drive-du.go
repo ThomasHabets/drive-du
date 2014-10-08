@@ -42,6 +42,21 @@ var (
 	config *lib.Config
 )
 
+type myError struct {
+	public, private string
+}
+
+func newError(public, private string) *myError {
+	return &myError{
+		public:  public,
+		private: private,
+	}
+}
+
+func (e *myError) Error() string {
+	return e.private
+}
+
 func transport(ctx appengine.Context, s, code string) (*oauth.Transport, error) {
 	at := &urlfetch.Transport{
 		Context: ctx,
@@ -65,7 +80,7 @@ func rootHandler(w http.ResponseWriter, r *http.Request) error {
 	}{
 		AuthURL: oauthConfig().AuthCodeURL(""),
 	}); err != nil {
-		return fmt.Errorf("Template execution error: %v", err)
+		return newError("Internal error: Template render error", fmt.Sprintf("Template execution error: %v", err))
 	}
 	_, err := w.Write(buf.Bytes())
 	return err
@@ -83,11 +98,11 @@ func oauth2Handler(w http.ResponseWriter, r *http.Request) error {
 	c := appengine.NewContext(r)
 	t, err := transport(c, scope, r.FormValue("code"))
 	if err != nil {
-		return fmt.Errorf("failed to get transport: %v", err)
+		return newError("OAuth error", fmt.Sprintf("failed to get transport: %v", err))
 	}
 	d, err := drive.New(t.Client())
 	if err != nil {
-		return fmt.Errorf("drive.New(): %v", err)
+		return newError("OAuth drive client error", fmt.Sprintf("drive.New(): %v", err))
 	}
 
 	dirs := []string{"root"}
@@ -152,7 +167,7 @@ func oauth2Handler(w http.ResponseWriter, r *http.Request) error {
 		StorageByFolder: dirSizes,
 		StorageByOwner:  userSizes,
 	}); err != nil {
-		return fmt.Errorf("Template execution error: %v", err)
+		return newError("Internal error: Template render error", fmt.Sprintf("Template execution error: %v", err))
 	}
 	_, err = w.Write(buf.Bytes())
 	return err
@@ -161,8 +176,12 @@ func oauth2Handler(w http.ResponseWriter, r *http.Request) error {
 func wrapHandler(w http.ResponseWriter, r *http.Request, h func(http.ResponseWriter, *http.Request) error) {
 	c := appengine.NewContext(r)
 	if err := h(w, r); err != nil {
-		c.Errorf("Handler error: %v", err)
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		c.Errorf("Handler error: %s", err.Error())
+		if e, ok := err.(*myError); ok {
+			http.Error(w, e.public, http.StatusInternalServerError)
+		} else {
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		}
 	}
 }
 
