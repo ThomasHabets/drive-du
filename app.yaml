@@ -1,0 +1,35 @@
+application: drive-du
+version: 1
+api_version: go1
+runtime: go
+
+handlers:
+- url: /
+  script: _go_app
+  secure: always
+- url: /du
+  script: _go_app
+  secure: always
+- url: /oauth2callback
+  script: _go_app
+  secure: always
+- url: /static
+  static_dir: static
+  secure: always
+  expiration: "1d"
+  http_headers:
+    X-Content-Type-Options: nosniff
+    X-Pingback: https://www.willreadit.com/ping
+    X-Frame-Options: SAMEORIGIN
+    X-XSS-Protection: 1; mode=block
+    X-Permitted-Cross-Domain-Policies: master-only
+    Strict-Transport-Security: max-age=31536000
+    X-UA-Compatible: Chrome=1
+
+skip_files:
+- ^(du|find)/.*
+- ^(.*/)?#.*#$
+- ^(.*/)?.*~$
+- ^(.*/)?.*\.py[co]$
+- ^(.*/)?.*/RCS/.*$
+- ^(.*/)?\..*$

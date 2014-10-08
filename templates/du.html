@@ -1,0 +1,27 @@
+<html>
+  <head>
+    <title>Drive DU</title>
+    <link rel="stylesheet" type="text/css" href="/static/drive-du.css" media="screen"/>
+  </head>
+  <body>
+    <div>
+      <a href="/">Drive DU</a>
+    </div>
+
+    <h2>Storage by folder</h2>
+    <table>
+      <tr><th>Folder</th><th>Size</th></tr>
+      {{range .StorageByFolder}}
+        <tr><td>{{.Key}}</td><td class="size">{{.Value.Pretty}}</td></tr>
+      {{end}}
+    </table>
+
+    <table>
+      <tr><th>Owner</th><th>Size</th></tr>
+      {{range .StorageByOwner}}
+        <tr><td>{{.Key}}</td><td class="size">{{.Value.Pretty}}</td></tr>
+      {{end}}
+    </table>
+
+  </body>
+</html>
