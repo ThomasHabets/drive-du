@@ -30,15 +30,7 @@ func main() {
 	}
 
 	if *configure {
-		conf, err := lib.Configure(scope, accessType)
-		if err != nil {
-			log.Fatal(err)
-		}
-		b, err := json.Marshal(conf)
-		if err != nil {
-			log.Fatal(err)
-		}
-		if err := ioutil.WriteFile(*config, b, 0600); err != nil {
+		if err := lib.ConfigureWrite(scope, accessType, *config); err != nil {
 			log.Fatal(err)
 		}
 		return

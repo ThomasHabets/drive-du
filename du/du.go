@@ -18,6 +18,7 @@ import (
 
 var (
 	config     = flag.String("config", "", "Config file.")
+	configure  = flag.Bool("configure", false, "Configure oauth.")
 	workers    = flag.Int("workers", 10, "Number of Google API workers.")
 	sortBySize = flag.Bool("s", false, "Sort by size.")
 )
@@ -31,6 +32,13 @@ func main() {
 	flag.Parse()
 	if *config == "" {
 		log.Fatalf("-config required")
+	}
+
+	if *configure {
+		if err := lib.ConfigureWrite(scope, accessType, *config); err != nil {
+			log.Fatal(err)
+		}
+		return
 	}
 
 	conf, err := lib.ReadConfig(*config)
