@@ -27,7 +27,7 @@ handlers:
     X-UA-Compatible: Chrome=1
 
 skip_files:
-- ^(du|find)/.*
+- ^(du|find|chown)/.*
 - ^(.*/)?#.*#$
 - ^(.*/)?.*~$
 - ^(.*/)?.*\.py[co]$
