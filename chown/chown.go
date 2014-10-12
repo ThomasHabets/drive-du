@@ -71,9 +71,13 @@ func copyFile(d *drive.Service, t http.RoundTripper, p []string, f *drive.File) 
 		return fmt.Errorf("downloading status: want 200, got %d: %v", resp.StatusCode)
 	}
 	fout := drive.File{
-		Title:       f.Title,
-		Description: f.Description,
-		MimeType:    f.MimeType,
+		Title:            f.Title,
+		Description:      f.Description,
+		MimeType:         f.MimeType,
+		CreatedDate:      f.CreatedDate,
+		OriginalFilename: f.OriginalFilename,
+		Properties:       f.Properties,
+		Labels:           f.Labels,
 		Parents: []*drive.ParentReference{
 			&drive.ParentReference{Id: findDir(d, p)},
 		},
