@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	driveFolder = "application/vnd.google-apps.folder"
+	DriveFolder = "application/vnd.google-apps.folder"
 	backoffBase = 500 * time.Millisecond
 	backoff     = 1.5
 	maxBackoff  = 2 * time.Minute
@@ -151,7 +151,7 @@ func Find(d *drive.Service, wg *work, ch chan<- *File, id, page string, path []s
 			if err != nil {
 				log.Fatal(err)
 			}
-			if f.MimeType == driveFolder {
+			if f.MimeType == DriveFolder {
 				wg.add(func() { Find(d, wg, ch, c.Id, "", append(path, f.Title)) })
 			} else {
 				ch <- &File{

@@ -87,6 +87,21 @@ func ReadLine(s string) (string, error) {
 	return id, nil
 }
 
+func ConfigureWrite(scope, at, fn string) error {
+	conf, err := Configure(scope, at)
+	if err != nil {
+		return err
+	}
+	b, err := json.Marshal(conf)
+	if err != nil {
+		return err
+	}
+	if err := ioutil.WriteFile(fn, b, 0600); err != nil {
+		return err
+	}
+	return nil
+}
+
 func Configure(scope, at string) (*Config, error) {
 	id, err := ReadLine("ClientID: ")
 	if err != nil {
