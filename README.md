@@ -2,9 +2,12 @@ Drive-DU
 ========
 Copyright(c) Thomas Habets <thomas@habets.se> 2014
 
-Running at: https://drive-du.appspot.com/
-Also contains cmdline tools for working with Google Drive.
 
+Google Drive plug-in
+====================
+Running at: https://drive-du.appspot.com/
+
+Go there and authorize it to be added to the "Open With" menu.
 
 Command line tools
 ==================
