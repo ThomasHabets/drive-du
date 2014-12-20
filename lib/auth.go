@@ -88,7 +88,7 @@ func ReadLine(s string) (string, error) {
 }
 
 func ConfigureWrite(scope, at, fn string) error {
-	conf, err := Configure(scope, at)
+	conf, err := Configure(scope, at, "", "")
 	if err != nil {
 		return err
 	}
@@ -102,14 +102,35 @@ func ConfigureWrite(scope, at, fn string) error {
 	return nil
 }
 
-func Configure(scope, at string) (*Config, error) {
-	id, err := ReadLine("ClientID: ")
+func ConfigureWriteSharedSecrets(scope, at, fn, clientID, clientSecret string) error {
+	conf, err := Configure(scope, at, clientID, clientSecret)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	secret, err := ReadLine("ClientSecret: ")
+	b, err := json.Marshal(conf)
 	if err != nil {
-		return nil, err
+		return err
+	}
+	if err := ioutil.WriteFile(fn, b, 0600); err != nil {
+		return err
+	}
+	return nil
+}
+
+func Configure(scope, at, id, secret string) (*Config, error) {
+	var err error
+
+	if id == "" {
+		id, err = ReadLine("ClientID: ")
+		if err != nil {
+			return nil, err
+		}
+	}
+	if secret == "" {
+		secret, err = ReadLine("ClientSecret: ")
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	token, err := auth(ConfigOAuth{
