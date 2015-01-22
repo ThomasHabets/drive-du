@@ -9,6 +9,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"net/http"
+	"net/url"
 	"os"
 	"strings"
 
@@ -21,7 +23,7 @@ const (
 )
 
 type ConfigOAuth struct {
-	ClientID, ClientSecret, RefreshToken string
+	ClientID, ClientSecret, RefreshToken, AccessToken, ApiKey string
 }
 
 type Config struct {
@@ -53,12 +55,28 @@ func ReadConfig(fn string) (*Config, error) {
 	return &config, nil
 }
 
+type addKey struct {
+	key string
+}
+
+func (t *addKey) RoundTrip(req *http.Request) (*http.Response, error) {
+	req.URL, _ = url.Parse(req.URL.String() + "&key=" + t.key)
+	return http.DefaultTransport.RoundTrip(req)
+}
+
 func Connect(cfg ConfigOAuth, scope, accessType string) (*oauth.Transport, error) {
 	t := &oauth.Transport{
 		Config: OAuthConfig(cfg, scope, OAuthRedirectOffline, accessType),
 		Token: &oauth.Token{
+			AccessToken:  cfg.AccessToken,
 			RefreshToken: cfg.RefreshToken,
 		},
+	}
+	if cfg.ApiKey != "" {
+		t.Transport = &addKey{
+			key: cfg.ApiKey,
+		}
+		return t, nil
 	}
 	return t, t.Refresh()
 }
