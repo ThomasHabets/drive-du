@@ -13,11 +13,11 @@ import (
 )
 
 var (
-	config    = flag.String("config", "", "Config file.")
+	srcconfig = flag.String("src_config", "", "Config file.")
+	dstconfig = flag.String("dst_config", "", "Config file.")
 	configure = flag.Bool("configure", false, "Configure oauth.")
 	workers   = flag.Int("workers", 10, "Number of Google API workers.")
-	src       = flag.String("src", "", "Source folder.")
-	dst       = flag.String("dst", "", "Destination folder.")
+	folder    = flag.String("folder", "", "Folder.")
 )
 
 const (
@@ -32,7 +32,7 @@ var (
 
 func findDir(d *drive.Service, p []string) string {
 	if len(p) == 0 {
-		return *dst
+		return *folder
 	}
 	id, ok := paths[strings.Join(p, folderSeparator)]
 	if ok {
@@ -91,32 +91,51 @@ func copyFile(d *drive.Service, t http.RoundTripper, p []string, f *drive.File) 
 
 func main() {
 	flag.Parse()
-	if *config == "" {
-		log.Fatalf("-config required")
+	if *srcconfig == "" || *dstconfig == "" {
+		log.Fatalf("-srcconfig and -dstconfig required")
 	}
 
 	if *configure {
-		if err := lib.ConfigureWrite(scope, accessType, *config); err != nil {
+		fmt.Printf("------------ Source user ---------------\n")
+		if err := lib.ConfigureWrite(scope, accessType, *srcconfig); err != nil {
+			log.Fatal(err)
+		}
+		fmt.Printf("------------ Destination user ---------------\n")
+		if err := lib.ConfigureWrite(scope, accessType, *dstconfig); err != nil {
 			log.Fatal(err)
 		}
 		return
 	}
 
-	conf, err := lib.ReadConfig(*config)
+	srcconf, err := lib.ReadConfig(*srcconfig)
 	if err != nil {
 		log.Fatal(err)
 	}
-	t, err := lib.Connect(conf.OAuth, scope, accessType)
-	if err != nil {
-		log.Fatal(err)
-	}
-	d, err := drive.New(t.Client())
+	dstconf, err := lib.ReadConfig(*dstconfig)
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	srct, err := lib.Connect(srcconf.OAuth, scope, accessType)
+	if err != nil {
+		log.Fatal(err)
+	}
+	dstt, err := lib.Connect(dstconf.OAuth, scope, accessType)
+	if err != nil {
+		log.Fatal(err)
+	}
+	srcd, err := drive.New(srct.Client())
+	if err != nil {
+		log.Fatal(err)
+	}
+	dstd, err := drive.New(dstt.Client())
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	//lib.Verbose = true
 	ch := make(chan *lib.File)
-	go lib.ListRecursive(d, *workers, ch, *src)
+	go lib.ListRecursive(dstd, *workers, ch, *folder)
 
 	seen := make(map[string]bool)
 	for e := range ch {
@@ -124,9 +143,17 @@ func main() {
 			continue
 		}
 		seen[e.File.Id] = true
+		log.Printf("%q %q", e.File.Title, e.File.OwnerNames)
+		if e.File.OwnerNames[0] != "Insecure User" {
+			continue
+		}
 		log.Printf("Copying %q", e.File.Title)
-		if err := copyFile(d, t, e.Path, e.File); err != nil {
+		if err := copyFile(dstd, dstt, e.Path, e.File); err != nil {
 			log.Fatalf("Failed to download %q (%s): %v", e.File.Title, e.File.Id, err)
+		}
+		log.Printf("Trashing %s in source user", e.File.Id)
+		if _, err := srcd.Files.Trash(e.File.Id).Do(); err != nil {
+			log.Fatalf("Failed to trash %q (%s): %v", e.File.Title, e.File.Id, err)
 		}
 	}
 }

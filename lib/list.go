@@ -18,7 +18,10 @@ const (
 	backoffBase = 500 * time.Millisecond
 	backoff     = 1.5
 	maxBackoff  = 2 * time.Minute
-	verbose     = false
+)
+
+var (
+	Verbose = false
 )
 
 func ListRecursive(d *drive.Service, workers int, ch chan<- *File, id string) {
@@ -42,7 +45,7 @@ func getFile(d *drive.Service, id string) (*drive.File, error) {
 		st := time.Now()
 		f, err := d.Files.Get(id).Do()
 		if err == nil {
-			if verbose {
+			if Verbose {
 				log.Printf("Files.Get: %v", time.Since(st))
 			}
 			return f, nil
@@ -62,12 +65,12 @@ func listDir(d *drive.Service, id, pageToken string) (*drive.ChildList, error) {
 		st := time.Now()
 		l, err := d.Children.List(id).PageToken(pageToken).Do()
 		if err == nil {
-			if verbose {
+			if Verbose {
 				log.Printf("Children.List: %v", time.Since(st))
 			}
 			return l, nil
 		}
-		log.Printf("Failed Children.List: %v\n", err)
+		log.Printf("Failed Children.List(%s, %q): %v\n", id, pageToken, err)
 		time.Sleep(time.Duration((1.0 + rand.Float64()/2.0) * float64(backoff)))
 		backoff *= backoff
 		if backoff > maxBackoff {
