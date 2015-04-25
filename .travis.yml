@@ -5,3 +5,6 @@ go:
   - tip
 install:
   - go get code.google.com/p/goauth2/oauth
+before_script:
+  - wget https://googleappengine.googlecode.com/files/google_appengine_1.8.9.zip -nv
+  - unzip -q google_appengine_1.8.9.zip
