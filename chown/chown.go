@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"strings"
 
-	drive "code.google.com/p/google-api-go-client/drive/v2"
+	drive "google.golang.org/api/drive/v2"
 
 	"github.com/ThomasHabets/drive-du/lib"
 )
@@ -54,7 +54,7 @@ func findDir(d *drive.Service, p []string) string {
 	return thisFile.Id
 }
 
-func copyFile(d *drive.Service, t http.RoundTripper, p []string, f *drive.File) error {
+func copyFile(d *drive.Service, t *http.Client, p []string, f *drive.File) error {
 	if f.DownloadUrl == "" {
 		return fmt.Errorf("file is not downloadable")
 	}
@@ -62,7 +62,7 @@ func copyFile(d *drive.Service, t http.RoundTripper, p []string, f *drive.File) 
 	if err != nil {
 		return err
 	}
-	resp, err := t.RoundTrip(req)
+	resp, err := t.Do(req)
 	defer resp.Body.Close()
 	if err != nil {
 		return err
@@ -124,11 +124,11 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	srcd, err := drive.New(srct.Client())
+	srcd, err := drive.New(srct)
 	if err != nil {
 		log.Fatal(err)
 	}
-	dstd, err := drive.New(dstt.Client())
+	dstd, err := drive.New(dstt)
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -14,7 +14,7 @@ import (
 	"os"
 	"strings"
 
-	"golang.org/x/goauth2/oauth"
+	oauth "golang.org/x/oauth2"
 )
 
 const (
@@ -32,13 +32,14 @@ type Config struct {
 
 func OAuthConfig(cfg ConfigOAuth, scope, redir, accessType string) *oauth.Config {
 	return &oauth.Config{
-		ClientId:     cfg.ClientID,
+		ClientID:     cfg.ClientID,
 		ClientSecret: cfg.ClientSecret,
-		AuthURL:      "https://accounts.google.com/o/oauth2/auth",
-		Scope:        scope,
-		TokenURL:     "https://accounts.google.com/o/oauth2/token",
-		RedirectURL:  redir,
-		AccessType:   accessType,
+		Endpoint: oauth.Endpoint{
+			AuthURL:  "https://accounts.google.com/o/oauth2/auth",
+			TokenURL: "https://accounts.google.com/o/oauth2/token",
+		},
+		Scopes:      []string{scope},
+		RedirectURL: redir,
 	}
 }
 
@@ -64,30 +65,58 @@ func (t *addKey) RoundTrip(req *http.Request) (*http.Response, error) {
 	return http.DefaultTransport.RoundTrip(req)
 }
 
-func Connect(cfg ConfigOAuth, scope, accessType string) (*oauth.Transport, error) {
-	t := &oauth.Transport{
-		Config: OAuthConfig(cfg, scope, OAuthRedirectOffline, accessType),
-		Token: &oauth.Token{
-			AccessToken:  cfg.AccessToken,
-			RefreshToken: cfg.RefreshToken,
-		},
-	}
-	if cfg.ApiKey != "" {
-		t.Transport = &addKey{
-			key: cfg.ApiKey,
+type ts struct {
+	token oauth.Token
+}
+
+func (t *ts) Token() (*oauth.Token, error) {
+	return &t.token, nil
+}
+func Connect(cfg ConfigOAuth, scope, accessType string) (*http.Client, error) {
+	/*
+		 old code
+		t := &oauth.Transport{
+			Config: OAuthConfig(cfg, scope, OAuthRedirectOffline, accessType),
+			Token: &oauth.Token{
+				AccessToken:  cfg.AccessToken,
+				RefreshToken: cfg.RefreshToken,
+			},
 		}
-		return t, nil
+		if cfg.ApiKey != "" {
+			t.Transport = &addKey{
+				key: cfg.ApiKey,
+			}
+			return t, nil
+		}
+		return t, t.Refresh()
+	*/
+	token := &oauth.Token{
+		AccessToken:  cfg.AccessToken,
+		RefreshToken: cfg.RefreshToken,
 	}
-	return t, t.Refresh()
+	return OAuthConfig(cfg, scope, OAuthRedirectOffline, accessType).Client(oauth.NoContext, token), nil
+	/*
+		return &oauth.Transport{
+			Source: &ts{
+				token: oauth.Token{
+					AccessToken:  cfg.AccessToken,
+					RefreshToken: cfg.RefreshToken,
+				},
+			},
+		}, nil
+	*/
 }
 
 func auth(cfg ConfigOAuth, scope, at string) (string, error) {
+	accessType := oauth.AccessTypeOffline
+	if at == "online" {
+		accessType = oauth.AccessTypeOnline
+	}
 	ocfg := OAuthConfig(cfg, scope, OAuthRedirectOffline, at)
-	fmt.Printf("Cut and paste this URL into your browser:\n  %s\n", ocfg.AuthCodeURL(""))
+	fmt.Printf("Cut and paste this URL into your browser:\n  %s\n", ocfg.AuthCodeURL("", accessType))
 	fmt.Printf("Returned code: ")
 	line, _ := bufio.NewReader(os.Stdin).ReadString('\n')
-	t := oauth.Transport{Config: ocfg}
-	token, err := t.Exchange(line)
+	token, err := ocfg.Exchange(oauth.NoContext, line)
 	if err != nil {
 		return "", err
 	}

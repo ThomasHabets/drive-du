@@ -11,7 +11,7 @@ import (
 	"log"
 	"sort"
 
-	drive "code.google.com/p/google-api-go-client/drive/v2"
+	drive "google.golang.org/api/drive/v2"
 
 	"github.com/ThomasHabets/drive-du/lib"
 )
@@ -49,7 +49,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	d, err := drive.New(t.Client())
+	d, err := drive.New(t)
 	if err != nil {
 		log.Fatal(err)
 	}
