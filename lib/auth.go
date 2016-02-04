@@ -14,7 +14,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/golang/goauth2/oauth"
+	"golang.org/x/goauth2/oauth"
 )
 
 const (
