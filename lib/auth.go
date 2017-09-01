@@ -6,6 +6,7 @@ package lib
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -73,38 +74,18 @@ func (t *ts) Token() (*oauth.Token, error) {
 	return &t.token, nil
 }
 func Connect(cfg ConfigOAuth, scope, accessType string) (*http.Client, error) {
-	/*
-		 old code
-		t := &oauth.Transport{
-			Config: OAuthConfig(cfg, scope, OAuthRedirectOffline, accessType),
-			Token: &oauth.Token{
-				AccessToken:  cfg.AccessToken,
-				RefreshToken: cfg.RefreshToken,
-			},
-		}
-		if cfg.ApiKey != "" {
-			t.Transport = &addKey{
-				key: cfg.ApiKey,
-			}
-			return t, nil
-		}
-		return t, t.Refresh()
-	*/
+	// APIKey may or may not be set.
+	// Sometimes APIKey is used instead of normal auth.
+	ctx := context.WithValue(context.Background(), oauth.HTTPClient, &http.Client{
+		Transport: &transport.APIKey{Key: cfg.ApiKey},
+	})
+
+	// If using token, set that up.
 	token := &oauth.Token{
 		AccessToken:  cfg.AccessToken,
 		RefreshToken: cfg.RefreshToken,
 	}
-	return OAuthConfig(cfg, scope, OAuthRedirectOffline, accessType).Client(oauth.NoContext, token), nil
-	/*
-		return &oauth.Transport{
-			Source: &ts{
-				token: oauth.Token{
-					AccessToken:  cfg.AccessToken,
-					RefreshToken: cfg.RefreshToken,
-				},
-			},
-		}, nil
-	*/
+	return OAuthConfig(cfg, scope, OAuthRedirectOffline, accessType).Client(ctx, token), nil
 }
 
 func auth(cfg ConfigOAuth, scope, at string) (string, error) {
